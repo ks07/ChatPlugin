@@ -1,0 +1,21 @@
+channels:
+-   name: c
+    priority: 5
+    irc: '#chat'
+    hidden: false
+    public-name: Chat
+-   name: g
+    priority: 1
+    irc: '#guest'
+    hidden: false
+    public-name: Guest
+ircd:
+    port: 7000
+    userident: <nick>
+    userhost: <host>
+    serverid: '404'
+    propagate-ip: true
+    serverhost: minecraftserver.local
+    servername: Minecraft Server
+    password: test
+    host: localhost

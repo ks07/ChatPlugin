@@ -1,0 +1,20 @@
+channels:
+    g:
+        irc: '#guest'
+        name: '[Guest]'
+        auto:
+        - g:default
+    s:
+        allow:
+        - g:staff
+        irc: '#staff'
+        name: '[Staff]'
+        auto:
+        - g:staff
+    c:
+        allow:
+        - g:member
+        irc: '#chat'
+        name: '[Chat]'
+        auto:
+        - g:member

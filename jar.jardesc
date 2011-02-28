@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="WINDOWS-1252" standalone="no"?>
+<jardesc>
+    <jar path="C:/xampp/htdocs/game/chat.jar"/>
+    <options buildIfNeeded="true" compress="true" descriptionLocation="/ChatLib/jar.jardesc" exportErrors="false" exportWarnings="true" includeDirectoryEntries="false" overwrite="true" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
+    <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
+    <selectedProjects/>
+    <manifest generateManifest="false" manifestLocation="/ChatLib/manifest.mf" manifestVersion="1.0" reuseManifest="true" saveManifest="true" usesManifest="true">
+        <sealing sealJar="false">
+            <packagesToSeal/>
+            <packagesToUnSeal/>
+        </sealing>
+    </manifest>
+    <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
+        <javaElement handleIdentifier="=ChatLib/src&lt;de.johannes13.minecraft.bukkit.chat.plugin"/>
+        <file path="/ChatLib/test2.yml"/>
+        <file path="/ChatLib/test.yml"/>
+        <javaElement handleIdentifier="=ChatLib/src&lt;de.johannes13.minecraft.bukkit.chat.inspircd.utils"/>
+        <file path="/ChatLib/.classpath"/>
+        <javaElement handleIdentifier="=ChatLib/src&lt;de.johannes13.minecraft.bukkit.chat.inspircd"/>
+        <file path="/ChatLib/.project"/>
+        <file path="/ChatLib/src/plugin.yml"/>
+        <file path="/ChatLib/config.yml"/>
+    </selectedElements>
+    <fatjar builder="org.eclipse.jdt.ui.plain_jar_builder" launchConfig=""/>
+</jardesc>

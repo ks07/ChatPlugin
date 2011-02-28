@@ -1,0 +1,24 @@
+channels:
+- !!de.johannes13.minecraft.bukkit.chat.plugin.ChannelMetadata
+    allow: null
+    autojoin:
+    - g:default
+    ircRelay: '#guest'
+    name: g
+    publicName: Guest
+- !!de.johannes13.minecraft.bukkit.chat.plugin.ChannelMetadata
+    allow:
+    - g:member
+    autojoin:
+    - g:member
+    ircRelay: '#chat'
+    name: c
+    publicName: Chat
+- !!de.johannes13.minecraft.bukkit.chat.plugin.ChannelMetadata
+    allow:
+    - g:staff
+    autojoin:
+    - g:staff
+    ircRelay: '#staff'
+    name: s
+    publicName: Staff
