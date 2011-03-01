@@ -70,7 +70,7 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 		// parse config
 		List<ConfigurationNode> chs = getConfiguration().getNodeList("channels", empty);
 		for (ConfigurationNode conf : chs) {
-			cmeta.put(conf.getString("name"), new ChannelMetadata(conf.getString("name"), conf.getString("irc"), conf.getString("publicname"), conf.getBoolean("hidden", false), conf.getInt("priority", 0)));
+			cmeta.put(conf.getString("name"), new ChannelMetadata(conf.getString("name"), conf.getString("irc"), conf.getString("public-name"), conf.getBoolean("hidden", false), conf.getInt("priority", 0)));
 		}
 		System.out.println(cmeta);
 		ircd = new Ircd(getConfiguration().getNode("ircd"), this);
@@ -134,7 +134,7 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
-		// TODO commands
+		System.out.println("ChatPlugin.onCommand("+sender+", "+cmd+", "+commandLabel+", "+java.util.Arrays.toString(args)+")");
 		return false;
 	}
 

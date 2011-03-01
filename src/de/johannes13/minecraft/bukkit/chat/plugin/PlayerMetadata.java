@@ -26,6 +26,7 @@ public class PlayerMetadata {
 	 * @param uid the uid to set
 	 */
 	public void setUid(String uid) {
+		System.out.println("Seting uid of player " + player.getName() + " to " + uid);
 		this.uid = uid;
 	}
 
@@ -78,7 +79,7 @@ public class PlayerMetadata {
 	
 	@Override
 	public String toString() {
-		return "[Player " + player.getName() + " C:" + channels + "]";
+		return super.toString() + " " + player.getName() + " C: " + channels ;
 	}
 
 }

@@ -5,7 +5,6 @@ import java.io.PrintStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Scanner;
@@ -41,6 +40,7 @@ public class Ircd extends Thread {
 	PrintStream w;
 
 	public Ircd(ConfigurationNode config, ChatPlugin plugin) {
+		super("ChatPlugin.IrcD");
 		this.config = config;
 		sid = config.getString("serverid");
 		uidgen = new UidGenerator();
@@ -116,7 +116,8 @@ public class Ircd extends Thread {
 				line = r.nextLine();
 				System.out.println(line);
 				assert (line.contains("SERVER"));
-				rid = line.substring(1, 4);
+				System.out.println(java.util.Arrays.toString(split(line)));
+				rid = split(line)[5];
 				line = r.nextLine();
 				System.out.println(line);
 				assert (line.contains("BURST"));
@@ -147,7 +148,7 @@ public class Ircd extends Thread {
 				w2.println(pre + " PONG " + sid + " " + data[0] + "\r\n");
 				break;
 			case ENDBURST:
-				System.out.println("Recived Endburst");
+				System.out.println("Recived Endburst RID:" + data[0] + ", rid = " + rid);
 				if (data[0].equals(rid))
 					joinchannels(w2);
 				state = 2;
@@ -211,15 +212,16 @@ public class Ircd extends Thread {
 				plugin.forcePart(uid2player.get(data[3]), chmap.get(data[3]));
 				break;
 			case PRIVMSG:
-				if (data[3].startsWith("#")) {
+				if (data[2].startsWith("#")) {
 					// do something stupid, relay it
 					ChannelMetadata ch = chmap.get(data[2]);
 					if (ch != null)
 						plugin.sendIrcMessage(uid2meta.get(data[0]).nick, ch, data[3]);
 				} else {
 					PlayerMetadata pm = uid2player.get(data[2]);
+					System.out.println(pm);
 					if (pm != null)
-						plugin.sendIrcMessage(uid2meta.get(data[0]).nick, uid2player.get(data[2]), data[3]);
+						plugin.sendIrcMessage(uid2meta.get(data[0]).nick, pm, data[3]);
 					// ignore it :/
 				}
 				break;
@@ -315,9 +317,7 @@ public class Ircd extends Thread {
 
 	public static String[] split(String line) {
 		String[] sp1 = line.split(" :", 2);
-		System.out.println(Arrays.toString(sp1));
 		String[] sp2 = sp1[0].split(" ");
-		System.out.println(Arrays.toString(sp2));
 		String[] res;
 		if (!sp2[0].startsWith(":")) {
 			res = new String[sp1.length + sp2.length];
@@ -326,9 +326,10 @@ public class Ircd extends Thread {
 			res = new String[sp1.length + sp2.length - 1];
 			System.arraycopy(sp2, 0, res, 0, sp2.length);
 			res[0] = res[0].substring(1);
+			System.out.println(res[0]);
 		}
 		if (sp1.length == 2)
-			res[sp2.length] = sp1[1];
+			res[res.length-1] = sp1[1];
 		return res;
 	}
 
@@ -345,7 +346,8 @@ public class Ircd extends Thread {
 	public void sendMessage(PlayerMetadata metadata, String message) {
 		ChannelMetadata cm = plugin.getChannel(metadata.getCurrentChannel());
 		if (!chmap.contains(cm)) return;
-		w.println(":" + metadata.getUid() + " PRIVMSG " + cm.getIrcRelay() + " :" + message + "\r\n");
+		System.out.println(":" + metadata.getUid() + " PRIVMSG " + cm.getIrcRelay() + " :" + message);
+		w.println(":" + metadata.getUid() + " PRIVMSG " + cm.getIrcRelay() + " :" + message);
 	}
 
 	public void addPlayer(Player player) {
@@ -357,6 +359,8 @@ public class Ircd extends Thread {
 		hostname,
 		realhost;
 		PlayerMetadata meta = plugin.getMetadata(player);
+		meta.setUid(uid);
+		uid2player.put(uid, meta);
 		Player p = player;
 		if (ips) {
 			InetAddress addr = p.getAddress().getAddress();
@@ -382,8 +386,8 @@ public class Ircd extends Thread {
 		if (p.isOp())
 			w.println(":" + uid + " OPERTYPE Ops");
 		// log the user in to services (might not work, but might work)
-		w.println(":" + uid + " METADATA accountname " + p.getName() + "");
-		w.println(":" + uid + " METADATA swhois :is playing Minecraft");
+		w.println(":" + sid + " METADATA " + uid + " accountname " + p.getName());
+		w.println(":" + sid + " METADATA " + uid + " swhois :is playing Minecraft");
 		System.out.println(state);
 		if (state != 2) return;
 		System.out.println(meta);
@@ -397,11 +401,15 @@ public class Ircd extends Thread {
 	}
 
 	public void removePlayer(Player player, String string) {
-		w.println(":" + plugin.getMetadata(player).getUid() + " QUIT :" + string);
+		System.out.println(player);
+		System.out.println("Ircd.removePlayer() " + plugin.getMetadata(player));
+		System.out.println(plugin.getMetadata(player).getUid());
+		w.println(":" + plugin.getMetadata(player).getUid() + " QUIT :Quit: " + string);
 	}
 
 	public void removePlayer(Player player, String string, String string2) {
-		w.println(":" + plugin.getMetadata(player).getUid() + " OPERQUIT :" + string2);
-		w.println(":" + plugin.getMetadata(player).getUid() + " QUIT :" + string);
+		System.out.println("Ircd.removePlayer() Kicked: " + string2);
+		w.println(":" + plugin.getMetadata(player).getUid() + " OPERQUIT :Kicked: " + string2);
+		w.println(":" + plugin.getMetadata(player).getUid() + " QUIT :Quit: " + string);
 	}
 }

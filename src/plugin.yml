@@ -3,27 +3,29 @@ main: de.johannes13.minecraft.bukkit.chat.plugin.ChatPlugin
 version: 0.1
 commands:
   me:
-    description: sends the action to the current channel
+    description: sends a action to the current channel
     usage: |
-           /<command> message
-           Example: /<command> is mining
+           /<command> <message>
+           Example: /<command> is playing Minecraft
   msg:
     description: 'sends a private message to a player'
     usage: |
-           /<command> <player> message
-           Example: /<command> Bukkit I love you - sends the message "I love you" to Bukkit
+           /<command> <player> <message>
+           Example: /<command> Bukkit Great Job! - Sends the message "Great Job!" to Bukkit 
   ch:
     description: join a new channel or/and set your main channel
     usage: |
            /<command> [channel]
            Example: /<command> c - joins channel c
-  chlist:
+           Example: /<command> help for more detailed help on this command
+  names:
     description: lists all player in the channel.
     usage: |
            /<command> [channel]
-           Example: /<command> - Lists all players and irc user in your current channel
+           Example: /<command> - Lists all players and irc users in your current channel
            Example: /<command> s - List all users in the channel s
-  channels:
-    description: shows all public channels.
+  mme:
+    description: sends a action to a player
     usage: |
-           /<command> - Shows all public channels
+           /<command> <player> <message>
+           Example: /<command> SlowPlayer is waiting for you - Sends "* Player is waiting for you" to SlowPlayer 
