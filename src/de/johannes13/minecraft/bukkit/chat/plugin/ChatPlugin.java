@@ -3,6 +3,7 @@ package de.johannes13.minecraft.bukkit.chat.plugin;
 import java.io.File;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Hashtable;
@@ -70,7 +71,7 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 		// parse config
 		List<ConfigurationNode> chs = getConfiguration().getNodeList("channels", empty);
 		for (ConfigurationNode conf : chs) {
-			cmeta.put(conf.getString("name"), new ChannelMetadata(conf.getString("name"), conf.getString("irc"), conf.getString("public-name"), conf.getBoolean("hidden", false), conf.getInt("priority", 0)));
+			cmeta.put(conf.getString("name"), new ChannelMetadata(this, conf.getString("name"), conf.getString("irc"), conf.getString("public-name"), conf.getBoolean("hidden", false), conf.getInt("priority", 0)));
 		}
 		System.out.println(cmeta);
 		ircd = new Ircd(getConfiguration().getNode("ircd"), this);
@@ -134,8 +135,100 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
-		System.out.println("ChatPlugin.onCommand("+sender+", "+cmd+", "+commandLabel+", "+java.util.Arrays.toString(args)+")");
+		if (sender instanceof Player) {
+			Player p = (Player) sender;
+			PlayerMetadata pm = umeta.get(p);
+			ChannelMetadata cm = cmeta.get(pm.getCurrentChannel());
+			try {
+				ChatCommands c = ChatCommands.valueOf(commandLabel.toUpperCase());
+				switch (c) {
+				case CH:
+					// TODO
+					break;
+				case ME:
+					if (args.length < 1) return false;
+					cm.sendAction(pm, joinArgs(args));
+					return true;
+				case MME:
+					if (args.length < 2) return false;
+					List<? extends CommandSender> res = findPlayer(args[0]);
+					if (res.size() > 1) {
+						p.sendMessage(ChatColor.RED + "User matched against:" + res);
+						return true;
+					} else {
+						CommandSender t = res.get(0);
+						if (t instanceof Player) {
+							t.sendMessage("(MSG) * " + p.getDisplayName() + " " + joinArgs(args));
+						} else if (t instanceof IrcUser) {
+							ircd.sendAction(pm, ((IrcUser) t).getUid(), joinArgs(args));
+						}
+						return true;
+					}
+				case MSG:
+					if (args.length < 2) return false;
+					res = findPlayer(args[0]);
+					if (res.size() > 1) {
+						p.sendMessage(ChatColor.RED + "User matched against:" + res);
+						return true;
+					} else {
+						CommandSender t = res.get(0);
+						if (t instanceof Player) {
+							t.sendMessage("(MSG) " + p.getDisplayName() + ": " + joinArgs(args));
+						} else if (t instanceof IrcUser) {
+							ircd.sendMessage(pm, ((IrcUser) t).getUid(), joinArgs(args));
+						}
+						return true;
+					}
+				case NAMES:
+					// TODO
+					break;
+
+				}
+			} catch (IllegalArgumentException e) {
+
+			}
+		}
 		return false;
+	}
+	
+	public String joinArgs(String... args) {
+		String lmt = "";
+		StringBuilder msg = new StringBuilder(80);
+		for(String part : args) {
+			msg.append(lmt);
+			msg.append(part);
+			lmt = " ";
+		}
+		return msg.toString();
+	}
+	
+	public List<? extends CommandSender> findPlayer(String nick) {
+		List<Player> plMatch = getServer().matchPlayer(nick);
+		ArrayList<IrcUser> plMatch2 = new ArrayList<IrcUser>();
+		for (IrcUser u : ircd.getUser()) {
+			if (u.getNick().startsWith(nick)) plMatch2.add(u);
+		}
+		if ((plMatch.size() + plMatch2.size()) > 1) {
+			// Check if args[0] is the full player name..
+			for (Player plm : plMatch) {
+				if (plm.getName().equalsIgnoreCase(nick)) 
+					return Arrays.asList(plm);
+			}
+			for (IrcUser iu : plMatch2) {
+				if (iu.getNick().equalsIgnoreCase(nick))
+					return Arrays.asList(iu);
+			}
+			ArrayList<CommandSender> res = new ArrayList<CommandSender>();
+			res.addAll(plMatch);
+			res.addAll(plMatch2);
+		}
+		if (plMatch.size() > 0) {
+			return plMatch;
+		}
+		if (plMatch2.size() > 0) {
+			return plMatch2;
+		}
+		return new ArrayList<CommandSender>();
 	}
 
 	public PlayerMetadata getMetadata(Player p) {
@@ -186,7 +279,7 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 		if (playerMetadata.getCurrentChannel().equals(channelMetadata.name)) {
 			int max = -1;
 			String nch = "";
-			for(String ch:playerMetadata.getChannels()) {
+			for (String ch : playerMetadata.getChannels()) {
 				if (cmeta.get(ch).priority > max) {
 					max = cmeta.get(ch).priority;
 					nch = ch;
@@ -242,10 +335,11 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 		System.out.println(last == player);
 		PlayerMetadata pm = umeta.remove(player);
 		System.out.println(pm);
-		for(String s : pm.getChannels()) {
+		for (String s : pm.getChannels()) {
 			try {
 				cmeta.get(s).players.remove(pm);
-			} catch (Exception e) {}
+			} catch (Exception e) {
+			}
 		}
 	}
 

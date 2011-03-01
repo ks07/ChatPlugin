@@ -25,7 +25,7 @@ commands:
            Example: /<command> - Lists all players and irc users in your current channel
            Example: /<command> s - List all users in the channel s
   mme:
-    description: sends a action to a player
+    description: sends a action to a player - /msg and /me in one command
     usage: |
            /<command> <player> <message>
            Example: /<command> SlowPlayer is waiting for you - Sends "* Player is waiting for you" to SlowPlayer 

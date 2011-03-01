@@ -5,6 +5,7 @@ import java.io.PrintStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Scanner;
@@ -176,6 +177,7 @@ public class Ircd extends Thread {
 			case NICK:
 				IrcUser u = uid2meta.get(data[0]);
 				u.nick = data[2];
+				// TODO: send users a notify
 				break;
 			case SQUIT:
 				String rsid = data[2];
@@ -203,7 +205,7 @@ public class Ircd extends Thread {
 				w2.println(line + " " + getTS() + "\r\n");
 				break;
 			case UID:
-				IrcUser iu = new IrcUser();
+				IrcUser iu = new IrcUser(this);
 				iu.uid = data[2];
 				iu.nick = data[4];
 				uid2meta.put(data[2], iu);
@@ -214,9 +216,10 @@ public class Ircd extends Thread {
 			case PRIVMSG:
 				if (data[2].startsWith("#")) {
 					// do something stupid, relay it
+					// TODO: Parse CTCPs
 					ChannelMetadata ch = chmap.get(data[2]);
 					if (ch != null)
-						plugin.sendIrcMessage(uid2meta.get(data[0]).nick, ch, data[3]);
+						ch.sendMessage(uid2meta.get(data[0]).nick, data[3]);
 				} else {
 					PlayerMetadata pm = uid2player.get(data[2]);
 					System.out.println(pm);
@@ -278,7 +281,7 @@ public class Ircd extends Thread {
 					if (!chmap.contains(cm)) continue;
 					w2.println(":" + sid + " FJOIN " + cm.getIrcRelay() + " " + cm.getTs() + " + :," + uid);
 				}
-				break;
+				break;			
 			default:
 				// ignore
 			}
@@ -343,11 +346,8 @@ public class Ircd extends Thread {
 		}
 	}
 
-	public void sendMessage(PlayerMetadata metadata, String message) {
-		ChannelMetadata cm = plugin.getChannel(metadata.getCurrentChannel());
-		if (!chmap.contains(cm)) return;
-		System.out.println(":" + metadata.getUid() + " PRIVMSG " + cm.getIrcRelay() + " :" + message);
-		w.println(":" + metadata.getUid() + " PRIVMSG " + cm.getIrcRelay() + " :" + message);
+	public void sendMessage(PlayerMetadata metadata, String channel, String message) {
+		w.println(":" + metadata.getUid() + " PRIVMSG " + channel + " :" + message);
 	}
 
 	public void addPlayer(Player player) {
@@ -409,7 +409,22 @@ public class Ircd extends Thread {
 
 	public void removePlayer(Player player, String string, String string2) {
 		System.out.println("Ircd.removePlayer() Kicked: " + string2);
-		w.println(":" + plugin.getMetadata(player).getUid() + " OPERQUIT :Kicked: " + string2);
+		w.println(":" + sid + " OPERQUIT " + plugin.getMetadata(player).getUid() + " :Kicked: " + string2);
 		w.println(":" + plugin.getMetadata(player).getUid() + " QUIT :Quit: " + string);
+	}
+
+	public boolean isValid(String channel) {
+		if (channel == null) return false;
+		if (channel.equals("")) return false;
+		if (channel.charAt(0) != '#') return false;
+		return true;
+	}
+
+	public void sendAction(PlayerMetadata src, String channel, String message) {
+		w.println(":" + src.getUid() + " PRIVMSG " + channel + " :\u0001ACTION " + message + "\u0001");
+	}
+
+	public Collection<IrcUser> getUser() {
+		return uid2meta.values();
 	}
 }

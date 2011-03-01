@@ -15,6 +15,7 @@ public class ChannelMetadata {
 	boolean hidden;
 	int priority;
 	List<IrcUser> ircuser = new ArrayList<IrcUser>();
+	private ChatPlugin plugin;
 	
 	/**
 	 * @return the hidden
@@ -55,7 +56,8 @@ public class ChannelMetadata {
 	 * @param allow
 	 * @param publicName
 	 */
-	public ChannelMetadata(String name, String ircRelay, String publicName, boolean hidden, int priority) {
+	public ChannelMetadata(ChatPlugin p, String name, String ircRelay, String publicName, boolean hidden, int priority) {
+		this.plugin = p;
 		this.name = name;
 		this.ircRelay = ircRelay;
 		this.publicName = publicName;
@@ -134,8 +136,37 @@ public class ChannelMetadata {
 	
 	@Override
 	public String toString() {
-		// TODO Auto-generated method stub
 		return "Channel("+name+")";
+	}
+	
+	public void sendMessage(PlayerMetadata src, String message) {
+		for(PlayerMetadata t : players) {
+			t.getPlayer().sendMessage("[" + publicName + "] " + src.getPlayer().getDisplayName() + ": " + message);
+		}
+		if (plugin.ircd.isValid(ircRelay)) { 
+			plugin.ircd.sendMessage(src, ircRelay, message);
+		}
+	}
+	// msg from IRC
+	public void sendMessage(String src, String message) {
+		for(PlayerMetadata t : players) {
+			t.getPlayer().sendMessage("[" + ircRelay + "] " + src + ": " + message);
+		}
+	}
+	
+	public void sendAction(PlayerMetadata src, String message) {
+		for(PlayerMetadata t : players) {
+			t.getPlayer().sendMessage("[" + publicName + "] * " + src.getPlayer().getDisplayName() + " " + message);
+		}
+		if (plugin.ircd.isValid(ircRelay)) { 
+			plugin.ircd.sendAction(src, ircRelay, message);
+		}
+	}
+	
+	public void sendAction(String src, String message) {
+		for(PlayerMetadata t : players) {
+			t.getPlayer().sendMessage("[" + ircRelay + "] * " + src + " " + message);
+		}
 	}
 
 }

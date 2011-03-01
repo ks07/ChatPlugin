@@ -17,17 +17,11 @@ public class ChatListener extends PlayerListener {
 	@Override
 	public void onPlayerChat(PlayerChatEvent event) {
 		if (event.isCancelled()) return;
-		System.out.println("ChatListener.onPlayerChat() " + String.format(event.getFormat(), event.getPlayer().getDisplayName(), event.getMessage()));
-		event.setCancelled(true);
 		PlayerMetadata pm = plugin.getMetadata(event.getPlayer());
-		if (pm.getCurrentChannel() == null) return;
-		if (pm.getCurrentChannel().equals("")) return;
-		plugin.ircd.sendMessage(pm, event.getMessage());
 		ChannelMetadata cm = plugin.cmeta.get(pm.getCurrentChannel());
-		System.out.println("Message goes to " +cm);
-		System.out.println("Public name for " +cm+ "=" + cm.publicName);
-		for(PlayerMetadata t : cm.players) {
-			t.getPlayer().sendMessage("[" + cm.publicName + "] " + pm.getPlayer().getDisplayName() + ": " + event.getMessage());
+		if (cm != null) {
+			cm.sendMessage(pm, event.getMessage());
+			event.setCancelled(true);
 		}
 	}
 	
