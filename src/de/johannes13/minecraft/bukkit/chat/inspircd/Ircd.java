@@ -1,14 +1,16 @@
 package de.johannes13.minecraft.bukkit.chat.inspircd;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.PrintStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.Scanner;
 import java.util.logging.Level;
 
 import org.bukkit.entity.Player;
@@ -21,13 +23,17 @@ import de.johannes13.minecraft.bukkit.chat.plugin.PlayerMetadata;
 
 public class Ircd extends Thread {
 
+	public static enum State {
+		DISCONNECTED, BURSTNOUID, BURST, CONNECTED
+	}
+
 	final ConfigurationNode config;
 	final String sid;
 	final UidGenerator uidgen;
 	final ChatPlugin plugin;
 	String rid;
 	// 0 = not connected, 1 = burst, 2 = connected
-	int state = 0;
+	State state = State.DISCONNECTED;
 	// key: uid, value: nick
 	final Hashtable<String, String> uidmap = new Hashtable<String, String>();
 	final Hashtable<String, ChannelMetadata> chmap = new Hashtable<String, ChannelMetadata>();
@@ -38,7 +44,8 @@ public class Ircd extends Thread {
 	Socket socket;
 	private boolean stopped;
 
-	PrintStream w;
+	BufferedWriter w;
+	private ArrayList<Player> pending = new ArrayList<Player>();
 
 	public Ircd(ConfigurationNode config, ChatPlugin plugin) {
 		super("ChatPlugin.IrcD");
@@ -57,23 +64,28 @@ public class Ircd extends Thread {
 			try {
 				Socket s = new Socket(config.getString("host"), config.getInt("port", 7000));
 				socket = s;
-				PrintStream w = new PrintStream(s.getOutputStream());
-				this.w = w;
-				Scanner r = new Scanner(s.getInputStream(), "UTF-8");
+				w = new BufferedWriter(new OutputStreamWriter(s.getOutputStream(), "UTF-8"));
+				BufferedReader r = new BufferedReader(new InputStreamReader(s.getInputStream(), "UTF-8"));
 				// We skip capab, InspIRCd feels fine.
 				String line;
-				while (!(line = r.nextLine()).equalsIgnoreCase("CAPAB END")) {
-					System.out.println(line);
+				while ((line = r.readLine()) != null && !line.equalsIgnoreCase("CAPAB END")) {
+					System.out.println("-> " + line);
 				}
-				w.println("SERVER " + config.getString("serverhost") + " " + config.getString("password") + " 0 " + sid + " :" + config.getString("servername") + "\r\n");
-				state = 1;
-				w.println(pre + " BURST " + getTS() + "\r\n");
-				w.println(pre + " VERSION : Chat Plugin for Bukkit by Johannes13\r\n"); // DO NOT CHANGE!!!
+				if (line == null) throw new IOException("EOS");
+				this.println("SERVER " + config.getString("serverhost") + " " + config.getString("password") + " 0 " + sid + " :" + config.getString("servername") + "\r\n");
+				state = State.BURSTNOUID;
+				this.println(pre + " BURST " + getTS() + "\r\n");
+				this.println(pre + " VERSION : Chat Plugin for Bukkit by Johannes13\r\n"); // DO NOT CHANGE!!!
 				// Intoduce all users
 				boolean ips = config.getBoolean("propagate-ip", true);
 				String defhost = config.getString("userhost", "<host>");
 				String ident = config.getString("userident", "<nick>");
-				for (Player p : plugin.getServer().getOnlinePlayers()) {
+				Player[] players;
+				synchronized (pending) {
+					players = plugin.getServer().getOnlinePlayers();
+					state = State.BURST;
+				}
+				for (Player p : players) {
 					String uid = sid + uidgen.generateUID();
 					PlayerMetadata meta = plugin.getMetadata(p);
 					meta.setUid(uid);
@@ -98,13 +110,13 @@ public class Ircd extends Thread {
 					String id = ident;
 					if (ident.contains("<nick>"))
 						id = ident.replaceAll("<nick>", p.getName());
-					w.println(pre + " UID " + uid + " 2 " + p.getName() + " " + realhost + " " + hostname + " " + id + " " + ip + " " + meta.getSignon() + "+" + (p.isOp() ? "or" : "r") + " :Minecraft Player\r\n");
+					this.println(pre + " UID " + uid + " 2 " + p.getName() + " " + realhost + " " + hostname + " " + id + " " + ip + " " + meta.getSignon() + " +" + (p.isOp() ? "or" : "r") + " :Minecraft Player");
 					if (p.isOp())
-						w.println(":" + uid + " OPERTYPE Ops\r\n");
+						this.println(":" + uid + " OPERTYPE Ops\r\n");
 					// log the user in to services (might not work, but might
 					// work)
-					w.println(":" + uid + " METADATA accountname " + p.getName() + "\r\n");
-					w.println(":" + uid + " METADATA swhois :is playing Minecraft\r\n");
+					this.println(":" + sid + " METADATA " + uid + " accountname " + p.getName());
+					this.println(":" + sid + " METADATA " + uid + " swhois :is playing Minecraft");
 				}
 				for (ChannelMetadata ch : plugin.getChannels()) {
 					String rel = ch.getIrcRelay();
@@ -113,21 +125,21 @@ public class Ircd extends Thread {
 					chmap.put(ch.getIrcRelay(), ch);
 				}
 				System.out.println(chmap);
-				w.println(pre + " ENDBURST");
-				line = r.nextLine();
+				this.println(pre + " ENDBURST");
+				line = r.readLine();
 				System.out.println(line);
 				assert (line.contains("SERVER"));
 				System.out.println(java.util.Arrays.toString(split(line)));
 				rid = split(line)[5];
-				line = r.nextLine();
+				line = r.readLine();
 				System.out.println(line);
 				assert (line.contains("BURST"));
-				line = r.nextLine();
+				line = r.readLine();
 				System.out.println(line);
 				assert (line.contains("VERSION"));
 				// ok, we have now to read the remote users and channels
 				while (!stopped) {
-					parseCommands(r.nextLine(), w);
+					parseCommands(r.readLine());
 				}
 			} catch (IOException e) {
 				if (!stopped)
@@ -135,10 +147,11 @@ public class Ircd extends Thread {
 			}
 	}
 
-	private void parseCommands(String line, PrintStream w2) throws IOException {
+	private void parseCommands(String line) throws IOException {
 		line = line.trim();
-		if (line.equals("")) return;
-		System.out.println(line);
+		if (line.equals(""))
+			return;
+		System.out.println("<- " + line);
 		String pre = ":" + sid;
 		String[] data = split(line);
 		try {
@@ -146,38 +159,35 @@ public class Ircd extends Thread {
 			IrcCommands cmd = IrcCommands.valueOf(data[1]);
 			switch (cmd) {
 			case PING:
-				w2.println(pre + " PONG " + sid + " " + data[0] + "\r\n");
+				this.println(pre + " PONG " + sid + " " + data[0] + "\r\n");
 				break;
 			case ENDBURST:
-				System.out.println("Recived Endburst RID:" + data[0] + ", rid = " + rid);
+				state = State.CONNECTED;
 				if (data[0].equals(rid))
-					joinchannels(w2);
-				state = 2;
+					joinchannels();
 				break;
 			case FJOIN:
-				System.out.println(data[2]);
 				ChannelMetadata cm = chmap.get(data[2]);
-				System.out.println(chmap);
 				if (cm == null)
 					break;
-				System.out.println("FJOIN: " + cm);
 				cm.setTs(data[3]);
 				String[] usr = data[5].split(" ");
 				for (String uid : usr) {
 					uid = uid.split(",", 2)[1];
 					IrcUser u = uid2meta.get(uid);
-					plugin.ircJoin(u, cm, state == 2);
+					plugin.ircJoin(u, cm, state == State.CONNECTED);
 				}
 				break;
 			case IDLE:
 				// Always respond with 0 0? would be a good idea :)
 				// maybe change it later to the real signon time... TODO
-				w2.println(":" + data[2] + " IDLE " + data[0] + "0 0\r\n");
+				this.println(":" + data[2] + " IDLE " + data[0] + "0 0\r\n");
 				break;
 			case NICK:
 				IrcUser u = uid2meta.get(data[0]);
+				String oldnick = u.nick;
 				u.nick = data[2];
-				// TODO: send users a notify
+				plugin.sendIrcNickchange(u, oldnick);
 				break;
 			case SQUIT:
 				String rsid = data[2];
@@ -202,7 +212,7 @@ public class Ircd extends Thread {
 				plugin.forcePart(uid2player.get(data[2]), chmap.get(data[3]));
 				break;
 			case TIME:
-				w2.println(line + " " + getTS() + "\r\n");
+				this.println(line + " " + getTS() + "\r\n");
 				break;
 			case UID:
 				IrcUser iu = new IrcUser(this);
@@ -214,15 +224,33 @@ public class Ircd extends Thread {
 				plugin.forcePart(uid2player.get(data[3]), chmap.get(data[3]));
 				break;
 			case PRIVMSG:
-				if (data[2].startsWith("#")) {
-					// do something stupid, relay it
-					// TODO: Parse CTCPs
+				if (data[3].startsWith("\u0001")) {
+					// CTCP - we only support ACTION
+					String ctcpdata = data[3].substring(1);
+					String[] split = ctcpdata.split(" ", 2);
+					String ctcpcmd = split[0];
+					if (ctcpcmd.equalsIgnoreCase("ACTION")) {
+						if (split.length > 1) {
+							String msg = split[1];
+							if (data[2].startsWith("#")) {
+								// do something stupid, relay it
+								ChannelMetadata ch = chmap.get(data[2]);
+								if (ch != null)
+									ch.sendAction(uid2meta.get(data[0]).nick, msg);
+							} else {
+								PlayerMetadata pm = uid2player.get(data[2]);
+								if (pm != null)
+									plugin.sendIrcAction(uid2meta.get(data[0]).nick, pm, msg);
+								// ignore it :/
+							}
+						}
+					}
+				} else if (data[2].startsWith("#")) {
 					ChannelMetadata ch = chmap.get(data[2]);
 					if (ch != null)
 						ch.sendMessage(uid2meta.get(data[0]).nick, data[3]);
 				} else {
 					PlayerMetadata pm = uid2player.get(data[2]);
-					System.out.println(pm);
 					if (pm != null)
 						plugin.sendIrcMessage(uid2meta.get(data[0]).nick, pm, data[3]);
 					// ignore it :/
@@ -270,18 +298,19 @@ public class Ircd extends Thread {
 				String id = ident;
 				if (ident.contains("<nick>"))
 					id = ident.replaceAll("<nick>", p.getName());
-				w2.println(pre + " UID " + uid + " 2 " + p.getName() + " " + realhost + " " + hostname + " " + id + " " + ip + " " + meta.getSignon() + "+" + (p.isOp() ? "or" : "r") + " :Minecraft Player\r\n");
+				this.println(pre + " UID " + uid + " 2 " + p.getName() + " " + realhost + " " + hostname + " " + id + " " + ip + " " + meta.getSignon() + " +" + (p.isOp() ? "or" : "r") + " :Minecraft Player\r\n");
 				if (p.isOp())
-					w2.println(":" + uid + " OPERTYPE Ops\r\n");
+					this.println(":" + uid + " OPERTYPE Ops\r\n");
 				// log the user in to services (might not work, but might work)
-				w2.println(":" + uid + " METADATA accountname " + p.getName() + "\r\n");
-				w2.println(":" + uid + " METADATA swhois :is playing Minecraft\r\n");
-				for(String s : meta.getChannels()) {
+				this.println(":" + uid + " METADATA accountname " + p.getName() + "\r\n");
+				this.println(":" + uid + " METADATA swhois :is playing Minecraft\r\n");
+				for (String s : meta.getChannels()) {
 					cm = plugin.getChannel(s);
-					if (!chmap.contains(cm)) continue;
-					w2.println(":" + sid + " FJOIN " + cm.getIrcRelay() + " " + cm.getTs() + " + :," + uid);
+					if (!chmap.contains(cm))
+						continue;
+					this.println(":" + sid + " FJOIN " + cm.getIrcRelay() + " " + cm.getTs() + " + :," + uid);
 				}
-				break;			
+				break;
 			default:
 				// ignore
 			}
@@ -291,15 +320,21 @@ public class Ircd extends Thread {
 		}
 	}
 
-	private void joinchannels(PrintStream w2) throws IOException {
-		System.out.println("Ircd.joinchannels()");
+	private void joinchannels() throws IOException {
+		assert (state == State.CONNECTED);
+		synchronized (pending) {
+			for (Player p : pending) {
+				addPlayer(p);
+			}
+		}
+		pending.clear();
 		for (ChannelMetadata ch : chmap.values()) {
-			System.out.println("Ircd.joinchannels()" + ch);
 			String modes = "+";
 			String ts = ch.getTs();
 			if (ts == null) {
 				ch.setTs(ts = getTS());
-				if (ch.isHidden()) modes = "+s";
+				if (ch.isHidden())
+					modes = "+s";
 			}
 			String usrStr = "";
 			String lim = "";
@@ -309,8 +344,8 @@ public class Ircd extends Thread {
 				usrStr += m.getUid();
 				lim = " ";
 			}
-			
-			w2.println(":" + sid + " FJOIN " + ch.getIrcRelay() + " " + ts + " " + modes + " " + " :" + usrStr);
+
+			this.println(":" + sid + " FJOIN " + ch.getIrcRelay() + " " + ts + " " + modes + " " + " :" + usrStr);
 		}
 	}
 
@@ -329,16 +364,15 @@ public class Ircd extends Thread {
 			res = new String[sp1.length + sp2.length - 1];
 			System.arraycopy(sp2, 0, res, 0, sp2.length);
 			res[0] = res[0].substring(1);
-			System.out.println(res[0]);
 		}
 		if (sp1.length == 2)
-			res[res.length-1] = sp1[1];
+			res[res.length - 1] = sp1[1];
 		return res;
 	}
 
 	public void exit() {
 		stopped = true;
-		w.println(":" + sid + " SQUIT " + sid + " :Unloading Plugin\r\n");
+		this.println(":" + sid + " SQUIT " + sid + " :Unloading Plugin\r\n");
 		try {
 			socket.close();
 		} catch (IOException e) {
@@ -347,17 +381,27 @@ public class Ircd extends Thread {
 	}
 
 	public void sendMessage(PlayerMetadata metadata, String channel, String message) {
-		w.println(":" + metadata.getUid() + " PRIVMSG " + channel + " :" + message);
+		this.println(":" + metadata.getUid() + " PRIVMSG " + channel + " :" + message);
 	}
 
 	public void addPlayer(Player player) {
+		synchronized (pending) {
+			switch (state) {
+			case DISCONNECTED:
+			case BURSTNOUID:
+				return;
+			case BURST:
+				pending.add(player);
+				return;
+			case CONNECTED:
+				break;
+			}
+		}
 		boolean ips = config.getBoolean("propagate-ip", true);
 		String defhost = config.getString("userhost", "<host>");
 		String ident = config.getString("userident", "<nick>");
 		String uid = sid + uidgen.generateUID();
-		String ip,
-		hostname,
-		realhost;
+		String ip, hostname, realhost;
 		PlayerMetadata meta = plugin.getMetadata(player);
 		meta.setUid(uid);
 		uid2player.put(uid, meta);
@@ -381,50 +425,60 @@ public class Ircd extends Thread {
 		String id = ident;
 		if (ident.contains("<nick>"))
 			id = ident.replaceAll("<nick>", p.getName());
-		System.out.println(":" + sid + " UID " + uid + " 2 " + p.getName() + " " + realhost + " " + hostname + " " + id + " " + ip + " " + meta.getSignon() + " +" + (p.isOp() ? "or" : "r") + " :Minecraft Player");
-		w.println(":" + sid + " UID " + uid + " 2 " + p.getName() + " " + realhost + " " + hostname + " " + id + " " + ip + " " + meta.getSignon() + " +" + (p.isOp() ? "or" : "r") + " :Minecraft Player");
+		this.println(":" + sid + " UID " + uid + " 2 " + p.getName() + " " + realhost + " " + hostname + " " + id + " " + ip + " " + meta.getSignon() + " +" + (p.isOp() ? "or" : "r") + " :Minecraft Player\r\n");
 		if (p.isOp())
-			w.println(":" + uid + " OPERTYPE Ops");
+			this.println(":" + uid + " OPERTYPE Ops");
 		// log the user in to services (might not work, but might work)
-		w.println(":" + sid + " METADATA " + uid + " accountname " + p.getName());
-		w.println(":" + sid + " METADATA " + uid + " swhois :is playing Minecraft");
-		System.out.println(state);
-		if (state != 2) return;
-		System.out.println(meta);
-		for(String s : meta.getChannels()) {
+		this.println(":" + sid + " METADATA " + uid + " accountname " + p.getName());
+		this.println(":" + sid + " METADATA " + uid + " swhois :is playing Minecraft");
+		for (String s : meta.getChannels()) {
 			ChannelMetadata cm = plugin.getChannel(s);
-			System.out.println(cm);
-			if (!chmap.contains(cm)) continue;
-			System.out.println("Join channel " + cm + " TS: " + cm.getTs());
-			w.println(":" + sid + " FJOIN " + cm.getIrcRelay() + " " + cm.getTs() + " + :," + uid + "");
+			if (!chmap.contains(cm))
+				continue;
+			this.println(":" + sid + " FJOIN " + cm.getIrcRelay() + " " + cm.getTs() + " + :," + uid + "");
 		}
 	}
 
 	public void removePlayer(Player player, String string) {
-		System.out.println(player);
-		System.out.println("Ircd.removePlayer() " + plugin.getMetadata(player));
-		System.out.println(plugin.getMetadata(player).getUid());
-		w.println(":" + plugin.getMetadata(player).getUid() + " QUIT :Quit: " + string);
+		this.println(":" + plugin.getMetadata(player).getUid() + " QUIT :Quit: " + string);
 	}
 
 	public void removePlayer(Player player, String string, String string2) {
-		System.out.println("Ircd.removePlayer() Kicked: " + string2);
-		w.println(":" + sid + " OPERQUIT " + plugin.getMetadata(player).getUid() + " :Kicked: " + string2);
-		w.println(":" + plugin.getMetadata(player).getUid() + " QUIT :Quit: " + string);
+		this.println(":" + sid + " OPERQUIT " + plugin.getMetadata(player).getUid() + " :Kicked: " + string2);
+		this.println(":" + plugin.getMetadata(player).getUid() + " QUIT :Quit: " + string);
 	}
 
 	public boolean isValid(String channel) {
-		if (channel == null) return false;
-		if (channel.equals("")) return false;
-		if (channel.charAt(0) != '#') return false;
+		if (channel == null)
+			return false;
+		if (channel.equals(""))
+			return false;
+		if (channel.charAt(0) != '#')
+			return false;
 		return true;
 	}
 
 	public void sendAction(PlayerMetadata src, String channel, String message) {
-		w.println(":" + src.getUid() + " PRIVMSG " + channel + " :\u0001ACTION " + message + "\u0001");
+		this.println(":" + src.getUid() + " PRIVMSG " + channel + " :\u0001ACTION " + message + "\u0001");
 	}
 
 	public Collection<IrcUser> getUser() {
 		return uid2meta.values();
+	}
+
+	protected void println(String line) {
+		try {
+			System.out.println("-> " + line);
+			w.write(line);
+			w.write("\r\n");
+			w.flush();
+		} catch (IOException e) {
+			// ok, something goes wrong
+			plugin.getServer().getLogger().log(Level.SEVERE, "IOException while writing data", e);
+			plugin.restartIrcd();
+			// throw a thread death to exit the current thread
+			if (Thread.currentThread() == this)
+				throw new ThreadDeath();
+		}
 	}
 }

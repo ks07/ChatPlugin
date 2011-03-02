@@ -11,7 +11,7 @@ public class PlayerMetadata {
 	
 	private final Player player;
 	private final List<String> channels = new ArrayList<String>();
-	private String currentChannel = null;
+	private ChannelMetadata currentChannel = null;
 	private String uid;
 	private String signon;
 	
@@ -47,7 +47,7 @@ public class PlayerMetadata {
 	/**
 	 * @return the currentChannel
 	 */
-	public String getCurrentChannel() {
+	public ChannelMetadata getCurrentChannel() {
 		return currentChannel;
 	}
 
@@ -73,7 +73,7 @@ public class PlayerMetadata {
 	/**
 	 * @param currentChannel the currentChannel to set
 	 */
-	public void setCurrentChannel(String currentChannel) {
+	public void setCurrentChannel(ChannelMetadata currentChannel) {
 		this.currentChannel = currentChannel;
 	}
 	

@@ -1,5 +1,6 @@
 package de.johannes13.minecraft.bukkit.chat.plugin;
 
+import org.bukkit.ChatColor;
 import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.event.player.PlayerKickEvent;
@@ -18,10 +19,12 @@ public class ChatListener extends PlayerListener {
 	public void onPlayerChat(PlayerChatEvent event) {
 		if (event.isCancelled()) return;
 		PlayerMetadata pm = plugin.getMetadata(event.getPlayer());
-		ChannelMetadata cm = plugin.cmeta.get(pm.getCurrentChannel());
+		ChannelMetadata cm = pm.getCurrentChannel();
 		if (cm != null) {
 			cm.sendMessage(pm, event.getMessage());
 			event.setCancelled(true);
+		} else {
+			event.getPlayer().sendMessage(ChatColor.RED + "No channel joined. Join a channel to speak");
 		}
 	}
 	

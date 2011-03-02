@@ -36,8 +36,6 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 	private Method gmHas;
 	private Plugin gm;
 	Hashtable<String, ChannelMetadata> cmeta;
-	private Player last;
-
 	public ChatPlugin() {
 	}
 
@@ -73,7 +71,6 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 		for (ConfigurationNode conf : chs) {
 			cmeta.put(conf.getString("name"), new ChannelMetadata(this, conf.getString("name"), conf.getString("irc"), conf.getString("public-name"), conf.getBoolean("hidden", false), conf.getInt("priority", 0)));
 		}
-		System.out.println(cmeta);
 		ircd = new Ircd(getConfiguration().getNode("ircd"), this);
 		for (Player p : getServer().getOnlinePlayers()) {
 			pluginAddPlayer(p);
@@ -82,7 +79,6 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 	}
 
 	void pluginAddPlayer(Player p) {
-		last = p;
 		PlayerMetadata meta = new PlayerMetadata(p);
 		int priority = -1;
 		for (ChannelMetadata ch : cmeta.values()) {
@@ -91,12 +87,11 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 				meta.getChannels().add(ch.name);
 				if (ch.priority > priority) {
 					priority = ch.priority;
-					meta.setCurrentChannel(ch.name);
+					meta.setCurrentChannel(ch);
 				}
 			}
 		}
 		umeta.put(p, meta);
-		System.out.println(meta);
 	}
 
 	public boolean check(Player p, String perm) {
@@ -138,49 +133,112 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 		if (sender instanceof Player) {
 			Player p = (Player) sender;
 			PlayerMetadata pm = umeta.get(p);
-			ChannelMetadata cm = cmeta.get(pm.getCurrentChannel());
+			ChannelMetadata cm = pm.getCurrentChannel();
 			try {
 				ChatCommands c = ChatCommands.valueOf(commandLabel.toUpperCase());
 				switch (c) {
 				case CH:
-					// TODO
+					if (args.length < 1)
+						return false;
+					if (args[0].equals("help")) {
+						// TODO: help message
+						return true;
+					}
+					if (args[0].equals("pm")) {
+						if (args.length != 2)
+							return false; // TODO: maybe we should return a the help ourself
+						List<? extends CommandSender> res = findPlayer(args[1]);
+						if (res.size() > 1) {
+							p.sendMessage(ChatColor.RED + "User matched against:" + res);
+							return true;
+						} else if (res.size() < 1) {
+							p.sendMessage(ChatColor.RED + "User not found");
+							return true;
+						}
+						pm.setCurrentChannel(new PmChannel(this, res.get(0)));
+						String nick;
+						if (res.get(0) instanceof IrcUser) {
+							nick = ((IrcUser) res.get(0)).getNick();
+						} else {
+							nick = ((Player) res.get(0)).getName();
+						}
+						p.sendMessage(ChatColor.YELLOW + "You are now in private chat with " + nick);
+						return true;
+					}
+					if (cmeta.containsKey(args[0])) {
+						cm = cmeta.get(args[0]);
+						if (check(p, "chatplugin.join." + cm.name)) {
+							pm.setCurrentChannel(cm);
+							if (!pm.getChannels().contains(cm.name)) {
+								pm.getChannels().add(cm.name);
+								for(PlayerMetadata pmm : cm.players) {
+									pmm.getPlayer().sendMessage(ChatColor.YELLOW + "[" + p.getDisplayName() + ChatColor.YELLOW + " has joined " + cm.getPublicName() + "]");
+								}
+								p.sendMessage(ChatColor.YELLOW + "[You have joined " + p.getDisplayName() + "]");
+								cm.players.add(pm);
+							}
+							return true;
+						} else {
+							p.sendMessage("You don't have the permission to join " + cm.name);
+							return true;
+						}
+					}
 					break;
 				case ME:
-					if (args.length < 1) return false;
+					if (args.length < 1)
+						return false;
 					cm.sendAction(pm, joinArgs(args));
 					return true;
 				case MME:
-					if (args.length < 2) return false;
+					if (args.length < 2)
+						return false;
 					List<? extends CommandSender> res = findPlayer(args[0]);
 					if (res.size() > 1) {
 						p.sendMessage(ChatColor.RED + "User matched against:" + res);
 						return true;
 					} else {
 						CommandSender t = res.get(0);
+						String[] args0 = new String[args.length-1];
+						System.arraycopy(args, 1, args0, 0, args0.length);
+						String msg = joinArgs(args0);
+						p.sendMessage("(MSG) * " + p.getDisplayName() + " " + msg);
 						if (t instanceof Player) {
-							t.sendMessage("(MSG) * " + p.getDisplayName() + " " + joinArgs(args));
+							t.sendMessage("(MSG) * " + p.getDisplayName() + " " + msg);
 						} else if (t instanceof IrcUser) {
-							ircd.sendAction(pm, ((IrcUser) t).getUid(), joinArgs(args));
+							ircd.sendAction(pm, ((IrcUser) t).getUid(), msg);
 						}
 						return true;
 					}
 				case MSG:
-					if (args.length < 2) return false;
+					if (args.length < 2)
+						return false;
 					res = findPlayer(args[0]);
 					if (res.size() > 1) {
 						p.sendMessage(ChatColor.RED + "User matched against:" + res);
 						return true;
 					} else {
 						CommandSender t = res.get(0);
+						String[] args0 = new String[args.length-1];
+						System.arraycopy(args, 1, args0, 0, args0.length);
+						String msg = joinArgs(args0);
+						p.sendMessage("(MSG) " + p.getDisplayName() + ": " + msg);
 						if (t instanceof Player) {
-							t.sendMessage("(MSG) " + p.getDisplayName() + ": " + joinArgs(args));
+							t.sendMessage("(MSG) " + p.getDisplayName() + ": " + msg);
 						} else if (t instanceof IrcUser) {
-							ircd.sendMessage(pm, ((IrcUser) t).getUid(), joinArgs(args));
+							ircd.sendMessage(pm, ((IrcUser) t).getUid(), msg);
 						}
 						return true;
 					}
 				case NAMES:
-					// TODO
+					if (args.length == 1) {
+						cm = cmeta.get(args[0]);
+					}
+					if (cm == null) {
+						p.sendMessage(ChatColor.RED + "You didn't specify a valid channel");
+					}
+					p.sendMessage(ChatColor.YELLOW + "Current Members in " + cm.getPublicName() + ":");
+					if (cm.players.size() > 0) p.sendMessage(ChatColor.YELLOW + cm.getPublicName() + ChatColor.WHITE + " " + joinPlayerMetadata(cm.players));
+					if (cm.ircuser.size() > 0) p.sendMessage(ChatColor.YELLOW + cm.ircRelay + ChatColor.WHITE + " " + joinIrcUser(cm.ircuser));
 					break;
 
 				}
@@ -191,27 +249,50 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 		return false;
 	}
 	
-	public String joinArgs(String... args) {
+	public String joinPlayerMetadata(List<PlayerMetadata> pms) {
+		StringBuilder res = new StringBuilder(80);
+		String delim = "";
+		for(PlayerMetadata pm : pms) {
+			res.append(delim);
+			res.append(pm.getPlayer().getDisplayName());
+			delim = " ";
+		}
+		return res.toString();
+	}
+	
+	public String joinIrcUser(List<IrcUser> ircu) {
+		StringBuilder res = new StringBuilder(80);
+		String delim = "";
+		for(IrcUser pm : ircu) {
+			res.append(delim);
+			res.append(pm.getNick());
+			delim = " ";
+		}
+		return res.toString();
+	}
+
+	public static String joinArgs(String... args) {
 		String lmt = "";
 		StringBuilder msg = new StringBuilder(80);
-		for(String part : args) {
+		for (String part : args) {
 			msg.append(lmt);
 			msg.append(part);
 			lmt = " ";
 		}
 		return msg.toString();
 	}
-	
+
 	public List<? extends CommandSender> findPlayer(String nick) {
 		List<Player> plMatch = getServer().matchPlayer(nick);
 		ArrayList<IrcUser> plMatch2 = new ArrayList<IrcUser>();
 		for (IrcUser u : ircd.getUser()) {
-			if (u.getNick().startsWith(nick)) plMatch2.add(u);
+			if (u.getNick().startsWith(nick))
+				plMatch2.add(u);
 		}
 		if ((plMatch.size() + plMatch2.size()) > 1) {
 			// Check if args[0] is the full player name..
 			for (Player plm : plMatch) {
-				if (plm.getName().equalsIgnoreCase(nick)) 
+				if (plm.getName().equalsIgnoreCase(nick))
 					return Arrays.asList(plm);
 			}
 			for (IrcUser iu : plMatch2) {
@@ -276,7 +357,7 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 	public void forcePart(PlayerMetadata playerMetadata, ChannelMetadata channelMetadata) {
 		playerMetadata.getChannels().remove(channelMetadata.name);
 		channelMetadata.players.remove(playerMetadata);
-		if (playerMetadata.getCurrentChannel().equals(channelMetadata.name)) {
+		if (playerMetadata.getCurrentChannel().equals(channelMetadata)) {
 			int max = -1;
 			String nch = "";
 			for (String ch : playerMetadata.getChannels()) {
@@ -285,8 +366,8 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 					nch = ch;
 				}
 			}
-			playerMetadata.setCurrentChannel("");
-			if (nch == "") { // can check against instance, because both are internal :)
+			playerMetadata.setCurrentChannel(cmeta.get(nch));
+			if (nch == null) {
 				playerMetadata.getPlayer().sendMessage(ChatColor.RED + "[You were forced to leave " + channelMetadata.name + " you are currently in no channel]");
 			} else {
 				playerMetadata.getPlayer().sendMessage(ChatColor.YELLOW + "[You were forced to leave " + channelMetadata.name + ", your current channel is now " + nch + "]");
@@ -328,19 +409,28 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 	}
 
 	public void removePlayer(Player player) {
-		System.out.println(last);
-		System.out.println(player);
-		System.out.println(last.equals(player));
-		System.out.println(last.hashCode() == player.hashCode());
-		System.out.println(last == player);
 		PlayerMetadata pm = umeta.remove(player);
-		System.out.println(pm);
 		for (String s : pm.getChannels()) {
 			try {
 				cmeta.get(s).players.remove(pm);
 			} catch (Exception e) {
 			}
 		}
+	}
+
+	public void sendIrcNickchange(IrcUser u, String oldnick) {
+		ArrayList<PlayerMetadata> nickSend = new ArrayList<PlayerMetadata>();
+		for (ChannelMetadata cm : cmeta.values()) {
+			if (!cm.ircuser.contains(u)) continue;
+			for (PlayerMetadata pm : cm.players) {
+				if (nickSend.contains(pm)) continue;
+				pm.getPlayer().sendMessage(ChatColor.YELLOW + "[" + oldnick + " is now known as " + u.getNick() + "]");
+			}
+		}
+	}
+
+	public void sendIrcAction(String nick, PlayerMetadata pm, String message) {
+		pm.getPlayer().sendMessage("(MSG) * " + nick + " " + message);
 	}
 
 }

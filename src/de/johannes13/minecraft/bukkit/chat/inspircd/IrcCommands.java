@@ -11,6 +11,7 @@ public enum IrcCommands {
 	FHOST, //Ignore (for now)
 	FJOIN, //get ts, modes etc..
 	FNAME, // Ignore (for now)
+	FMODE, // Ignore (for now)
 	FTOPIC, //Ignore (notify users?)
 	IDLE, // response
 	JOIN, // response with ERROR? (should not happen)
