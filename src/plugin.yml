@@ -1,6 +1,6 @@
 name: ChatPlugin
 main: de.johannes13.minecraft.bukkit.chat.plugin.ChatPlugin
-version: 0.1
+version: 0.9
 commands:
   me:
     description: sends a action to the current channel

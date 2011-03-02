@@ -141,7 +141,9 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 					if (args.length < 1)
 						return false;
 					if (args[0].equals("help")) {
-						// TODO: help message
+						p.sendMessage(ChatColor.RED + "/ch <channel> - join channel");
+						p.sendMessage(ChatColor.RED + "/ch help - display this help message");
+						p.sendMessage(ChatColor.RED + "/ch pm <player> - go to private chat with that player");
 						return true;
 					}
 					if (args[0].equals("pm")) {
