@@ -69,7 +69,6 @@ public class Ircd extends Thread {
 				// We skip capab, InspIRCd feels fine.
 				String line;
 				while ((line = r.readLine()) != null && !line.equalsIgnoreCase("CAPAB END")) {
-					System.out.println("-> " + line);
 				}
 				if (line == null) throw new IOException("EOS");
 				this.println("SERVER " + config.getString("serverhost") + " " + config.getString("password") + " 0 " + sid + " :" + config.getString("servername") + "\r\n");
@@ -124,18 +123,13 @@ public class Ircd extends Thread {
 						continue;
 					chmap.put(ch.getIrcRelay(), ch);
 				}
-				System.out.println(chmap);
 				this.println(pre + " ENDBURST");
 				line = r.readLine();
-				System.out.println(line);
 				assert (line.contains("SERVER"));
-				System.out.println(java.util.Arrays.toString(split(line)));
 				rid = split(line)[5];
 				line = r.readLine();
-				System.out.println(line);
 				assert (line.contains("BURST"));
 				line = r.readLine();
-				System.out.println(line);
 				assert (line.contains("VERSION"));
 				// ok, we have now to read the remote users and channels
 				while (!stopped) {
@@ -151,7 +145,6 @@ public class Ircd extends Thread {
 		line = line.trim();
 		if (line.equals(""))
 			return;
-		System.out.println("<- " + line);
 		String pre = ":" + sid;
 		String[] data = split(line);
 		try {
@@ -468,7 +461,6 @@ public class Ircd extends Thread {
 
 	protected void println(String line) {
 		try {
-			System.out.println("-> " + line);
 			w.write(line);
 			w.write("\r\n");
 			w.flush();
