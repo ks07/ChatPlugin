@@ -166,6 +166,11 @@ public class Ircd extends Thread {
 			boolean force = false;
 			IrcCommands cmd = IrcCommands.valueOf(data[1]);
 			switch (cmd) {
+                        case AWAY:
+                                // For now announce we are away.
+                                // TODO: Allow setting away in game.
+                                plugin.ircAway(uid2meta.get(data[0]));
+                                break;
 			case PING:
 				this.println(pre + " PONG " + sid + " " + data[0] + "\r\n");
 				break;

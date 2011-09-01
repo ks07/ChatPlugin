@@ -352,6 +352,10 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 		}
 	}
 
+        public void ircAway(IrcUser u) {
+            getServer().broadcastMessage(ChatColor.YELLOW + "[" + u.getNick() + " is now away.]");
+        }
+
 	public void forceJoin(PlayerMetadata playerMetadata, ChannelMetadata channelMetadata, boolean force) {
 		playerMetadata.getChannels().add(channelMetadata.name);
 		channelMetadata.players.add(playerMetadata);

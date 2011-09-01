@@ -1,7 +1,8 @@
 package de.johannes13.minecraft.bukkit.chat.inspircd;
 
 public enum IrcCommands {
-	
+
+        AWAY, //Broadcast away message TODO: Mark AFK
 	ADDLINE, //Ignore (or add a ban for Q-Lines?) (SHUN -> freeze?)
 	BURST, // Not used
 	CAPAB, // not used
