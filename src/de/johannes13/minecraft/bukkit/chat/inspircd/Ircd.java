@@ -34,6 +34,7 @@ public class Ircd extends Thread {
 	String rid;
 	// 0 = not connected, 1 = burst, 2 = connected
 	State state = State.DISCONNECTED;
+        Boolean printdbg = false;
 	// key: uid, value: nick
 	final Hashtable<String, String> uidmap = new Hashtable<String, String>();
 	final Hashtable<String, ChannelMetadata> chmap = new Hashtable<String, ChannelMetadata>();
@@ -45,7 +46,7 @@ public class Ircd extends Thread {
 	private boolean stopped;
 
 	BufferedWriter w;
-	private ArrayList<Player> pending = new ArrayList<Player>();
+	private final ArrayList<Player> pending = new ArrayList<Player>();
 
 	public Ircd(ConfigurationNode config, ChatPlugin plugin) {
 		super("ChatPlugin.IrcD");
@@ -55,24 +56,30 @@ public class Ircd extends Thread {
 		this.plugin = plugin;
 	}
 
+        @Override
 	public void run() {
+                // String for later use.
+                String line;
 		// cache the sid value, it is used very often. (see java bytecode for
 		// reason)
 		String sid = this.sid;
 		String pre = ":" + sid;
 		while (!stopped)
 			try {
-				Socket s = new Socket(config.getString("host"), config.getInt("port", 7000));
+				Socket s = new Socket("localhost", 7002);
 				socket = s;
+                                if (!s.isConnected()) {
+                                    throw new IOException("Connection Failed");
+                                }
 				w = new BufferedWriter(new OutputStreamWriter(s.getOutputStream(), "UTF-8"));
 				BufferedReader r = new BufferedReader(new InputStreamReader(s.getInputStream(), "UTF-8"));
-				// We skip capab, InspIRCd feels fine.
-				String line;
-				while ((line = r.readLine()) != null && !line.equalsIgnoreCase("CAPAB END")) {
-				}
-				if (line == null) throw new IOException("EOS");
-				this.println("SERVER " + config.getString("serverhost") + " " + config.getString("password") + " 0 " + sid + " :" + config.getString("servername") + "\r\n");
-				state = State.BURSTNOUID;
+                                // We skip capab, InspIRCd feels fine.
+                                line = r.readLine();
+				this.println("SERVER game.ultimateminecraft.net password 0 404 :game.ultimateminecraft.net\r\n");
+                                state = State.BURSTNOUID;
+                                // Wait for CAPAB END.
+                                while (!(line = r.readLine()).equals("CAPAB END")) {
+                                }
 				this.println(pre + " BURST " + getTS() + "\r\n");
 				this.println(pre + " VERSION : Chat Plugin for Bukkit by Johannes13\r\n"); // DO NOT CHANGE!!!
 				// Intoduce all users
@@ -125,8 +132,13 @@ public class Ircd extends Thread {
 				}
 				this.println(pre + " ENDBURST");
 				line = r.readLine();
+                                System.out.println("IRC COMMAND RECEIVED => " + line + " <=");
 				assert (line.contains("SERVER"));
-				rid = split(line)[5];
+				if (line.contains("SERVER")) {
+                                    rid = split(line)[5];
+                            } else {
+                                    rid = "00A";
+                            }
 				line = r.readLine();
 				assert (line.contains("BURST"));
 				line = r.readLine();
@@ -142,6 +154,7 @@ public class Ircd extends Thread {
 	}
 
 	private void parseCommands(String line) throws IOException {
+                System.out.println("IRC COMMAND RECEIVED => " + line + " <=");
 		line = line.trim();
 		if (line.equals(""))
 			return;
@@ -214,6 +227,7 @@ public class Ircd extends Thread {
 				uid2meta.put(data[2], iu);
 				break;
 			case KICK:
+                                System.out.println("IRC KICK UID: " + data[3]);
 				plugin.forcePart(uid2player.get(data[3]), chmap.get(data[3]));
 				break;
 			case PRIVMSG:
@@ -461,12 +475,14 @@ public class Ircd extends Thread {
 
 	protected void println(String line) {
 		try {
+                        if (this.printdbg)
+                                System.out.println(line);
 			w.write(line);
-			w.write("\r\n");
+			w.newLine();
 			w.flush();
 		} catch (IOException e) {
 			// ok, something goes wrong
-			plugin.getServer().getLogger().log(Level.SEVERE, "IOException while writing data", e);
+			plugin.getServer().getLogger().log(Level.SEVERE, "IOException while writing data ", e);
 			plugin.restartIrcd();
 			// throw a thread death to exit the current thread
 			if (Thread.currentThread() == this)
