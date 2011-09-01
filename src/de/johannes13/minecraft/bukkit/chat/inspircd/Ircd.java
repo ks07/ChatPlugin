@@ -75,7 +75,7 @@ public class Ircd extends Thread {
 				BufferedReader r = new BufferedReader(new InputStreamReader(s.getInputStream(), "UTF-8"));
                                 // We skip capab, InspIRCd feels fine.
                                 line = r.readLine();
-				this.println("SERVER game.ultimateminecraft.net password 0 404 :game.ultimateminecraft.net\r\n");
+                                this.println("SERVER " + config.getString("serverhost") + " " + config.getString("password") + " 0 " + sid + " :" + config.getString("servername") + "\r\n");
                                 state = State.BURSTNOUID;
                                 // Wait for CAPAB END.
                                 while (!(line = r.readLine()).equals("CAPAB END")) {
@@ -132,7 +132,8 @@ public class Ircd extends Thread {
 				}
 				this.println(pre + " ENDBURST");
 				line = r.readLine();
-                                System.out.println("IRC COMMAND RECEIVED => " + line + " <=");
+                                if (this.printdbg)
+                                        System.out.println("IRC COMMAND RECEIVED => " + line + " <=");
 				assert (line.contains("SERVER"));
 				if (line.contains("SERVER")) {
                                     rid = split(line)[5];
@@ -154,7 +155,8 @@ public class Ircd extends Thread {
 	}
 
 	private void parseCommands(String line) throws IOException {
-                System.out.println("IRC COMMAND RECEIVED => " + line + " <=");
+                if (this.printdbg)
+                        System.out.println("IRC COMMAND RECEIVED => " + line + " <=");
 		line = line.trim();
 		if (line.equals(""))
 			return;
@@ -227,7 +229,8 @@ public class Ircd extends Thread {
 				uid2meta.put(data[2], iu);
 				break;
 			case KICK:
-                                System.out.println("IRC KICK UID: " + data[3]);
+                                if (this.printdbg)
+                                        System.out.println("IRC KICK UID: " + data[3]);
 				plugin.forcePart(uid2player.get(data[3]), chmap.get(data[3]));
 				break;
 			case PRIVMSG:

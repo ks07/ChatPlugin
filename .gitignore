@@ -6,3 +6,4 @@ build
 .settings
 *.jardesc
 manifest.mf
+dist
