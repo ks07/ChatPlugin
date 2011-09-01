@@ -39,9 +39,9 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 	public ChatPlugin() {
 	}
 
-	public ChatPlugin(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ClassLoader loader) {
-		super(pluginLoader, instance, desc, folder, plugin, loader);
-	}
+//	public ChatPlugin(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ClassLoader loader) {
+//		super(pluginLoader, instance, desc, folder, plugin, loader);
+//	}
 
 	@Override
 	public void onDisable() {
@@ -95,37 +95,39 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 	}
 
 	public boolean check(Player p, String perm) {
-		if (gm == null)
-			gm = getServer().getPluginManager().getPlugin("GroupManager");
-		if (gm == null)
-			// gm is still not loaded, assume it works
-			return true;
-		if (gmGetPermission == null) {
-			try {
-				Class<?> clazz = gm.getClass();
-				gmGetPermission = clazz.getMethod("getPermissionHandler");
-			} catch (Exception e) {
-				getServer().getLogger().log(Level.WARNING, "Tried to access GroupManager, got exception", e);
-				// allow it - not a big security risk imho
-				return true;
-			}
-		}
-		if (gmHas == null) {
-			try {
-				Class<?> cl2 = gm.getClass().getClassLoader().loadClass("com.nijiko.permissions.PermissionHandler");
-				gmHas = cl2.getMethod("has", Player.class, String.class);
-			} catch (Exception e) {
-				getServer().getLogger().log(Level.WARNING, "Tried to access GroupManager, got exception", e);
-				return true;
-			}
-
-		}
-		try {
-			return (Boolean) gmHas.invoke(gmGetPermission.invoke(gm), p, perm);
-		} catch (Exception e) {
-			getServer().getLogger().log(Level.WARNING, "Tried to invoke GroupManager, got exception", e);
-			return true;
-		}
+//		if (gm == null)
+//			gm = getServer().getPluginManager().getPlugin("GroupManager");
+//		if (gm == null)
+//			// gm is still not loaded, assume it works
+//			return true;
+//		if (gmGetPermission == null) {
+//			try {
+//				Class<?> clazz = gm.getClass();
+//				gmGetPermission = clazz.getMethod("getPermissionHandler");
+//			} catch (Exception e) {
+//				getServer().getLogger().log(Level.WARNING, "Tried to access GroupManager, got exception", e);
+//				// allow it - not a big security risk imho
+//				return true;
+//			}
+//		}
+//		if (gmHas == null) {
+//			try {
+//				Class<?> cl2 = gm.getClass().getClassLoader().loadClass("com.nijiko.permissions.PermissionHandler");
+//				gmHas = cl2.getMethod("has", Player.class, String.class);
+//			} catch (Exception e) {
+//				getServer().getLogger().log(Level.WARNING, "Tried to access GroupManager, got exception", e);
+//				return true;
+//			}
+//
+//		}
+//		try {
+//			return (Boolean) gmHas.invoke(gmGetPermission.invoke(gm), p, perm);
+//		} catch (Exception e) {
+//			getServer().getLogger().log(Level.WARNING, "Tried to invoke GroupManager, got exception", e);
+//			return true;
+//		}
+            // Disable permissions checks for now...
+            return true;
 	}
 
 	@Override
@@ -250,7 +252,7 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 		}
 		return false;
 	}
-	
+
 	public String joinPlayerMetadata(List<PlayerMetadata> pms) {
 		StringBuilder res = new StringBuilder(80);
 		String delim = "";
@@ -261,7 +263,7 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 		}
 		return res.toString();
 	}
-	
+
 	public String joinIrcUser(List<IrcUser> ircu) {
 		StringBuilder res = new StringBuilder(80);
 		String delim = "";
