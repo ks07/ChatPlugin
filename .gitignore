@@ -1,0 +1,8 @@
+build.xml
+.classpath
+.project
+nbproject
+build
+.settings
+*.jardesc
+manifest.mf
