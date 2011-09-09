@@ -32,16 +32,9 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 
 	private Hashtable<Player, PlayerMetadata> umeta;
 	/* package private */Ircd ircd;
-	private Method gmGetPermission;
-	private Method gmHas;
-	private Plugin gm;
 	Hashtable<String, ChannelMetadata> cmeta;
 	public ChatPlugin() {
 	}
-
-//	public ChatPlugin(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ClassLoader loader) {
-//		super(pluginLoader, instance, desc, folder, plugin, loader);
-//	}
 
 	@Override
 	public void onDisable() {
@@ -95,38 +88,7 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 	}
 
 	public boolean check(Player p, String perm) {
-//		if (gm == null)
-//			gm = getServer().getPluginManager().getPlugin("GroupManager");
-//		if (gm == null)
-//			// gm is still not loaded, assume it works
-//			return true;
-//		if (gmGetPermission == null) {
-//			try {
-//				Class<?> clazz = gm.getClass();
-//				gmGetPermission = clazz.getMethod("getPermissionHandler");
-//			} catch (Exception e) {
-//				getServer().getLogger().log(Level.WARNING, "Tried to access GroupManager, got exception", e);
-//				// allow it - not a big security risk imho
-//				return true;
-//			}
-//		}
-//		if (gmHas == null) {
-//			try {
-//				Class<?> cl2 = gm.getClass().getClassLoader().loadClass("com.nijiko.permissions.PermissionHandler");
-//				gmHas = cl2.getMethod("has", Player.class, String.class);
-//			} catch (Exception e) {
-//				getServer().getLogger().log(Level.WARNING, "Tried to access GroupManager, got exception", e);
-//				return true;
-//			}
-//
-//		}
-//		try {
-//			return (Boolean) gmHas.invoke(gmGetPermission.invoke(gm), p, perm);
-//		} catch (Exception e) {
-//			getServer().getLogger().log(Level.WARNING, "Tried to invoke GroupManager, got exception", e);
-//			return true;
-//		}
-            // Disable permissions checks for now...
+            // Disable permissions checks for now... Deprecate and use bukkit player perms.
             return true;
 	}
 
