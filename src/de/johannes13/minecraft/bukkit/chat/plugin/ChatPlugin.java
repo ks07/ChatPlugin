@@ -144,7 +144,7 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 								chanMd.players.remove(this.getMetadata(user));
                                                     }
 
-                                                    this.ircd.partPlayer(user, chanMd, "Kicked by " + p.getDisplayName());
+                                                    this.ircd.partPlayer(user, chanMd, "Kicked by " + p.getName());
 						}
 						p.sendMessage(ChatColor.YELLOW + "Kicked " + nick + " from channel " + args[2]);
 						return true;
