@@ -3,12 +3,12 @@ main: de.johannes13.minecraft.bukkit.chat.plugin.ChatPlugin
 version: 0.9
 commands:
   me:
-    description: sends a action to the current channel
+    description: sends an action to the current channel
     usage: |
            /<command> <message>
            Example: /<command> is playing Minecraft
   msg:
-    description: 'sends a private message to a player'
+    description: sends a private message to a player
     usage: |
            /<command> <player> <message>
            Example: /<command> Bukkit Great Job! - Sends the message "Great Job!" to Bukkit 

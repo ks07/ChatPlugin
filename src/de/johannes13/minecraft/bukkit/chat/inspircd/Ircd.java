@@ -261,9 +261,13 @@ public class Ircd extends Thread {
 						}
 					}
 				} else if (data[2].startsWith("#")) {
-					ChannelMetadata ch = chmap.get(data[2]);
-					if (ch != null)
-						ch.sendMessage(uid2meta.get(data[0]).nick, data[3]);
+                                        if (data[2].substring(1).equalsIgnoreCase("game")) {
+                                                plugin.sendIrcMessage(uid2meta.get(data[0]).nick, "Global", data[3]);
+                                        } else {
+                                                ChannelMetadata ch = chmap.get(data[2]);
+                                                if (ch != null)
+                                                        ch.sendMessage(uid2meta.get(data[0]).nick, data[3]);
+                                        }
 				} else {
 					PlayerMetadata pm = uid2player.get(data[2]);
 					if (pm != null)
@@ -396,6 +400,17 @@ public class Ircd extends Thread {
 	}
 
 	public void sendMessage(PlayerMetadata metadata, String channel, String message) {
+		this.println(":" + metadata.getUid() + " PRIVMSG " + channel + " :" + message);
+	}
+
+        public void sendMessage(String nick, String channel, String message) {
+//                ListIterator<PlayerMetadata> pmIt = plugin.getChannel(channel).getPlayers().listIterator();
+//                PlayerMetadata metadata = pmIt.next();
+//                while (pmIt.hasNext() && (!metadata.getPlayer().getName().equalsIgnoreCase(nick))) {
+//                        metadata = pmIt.next();
+//                        //rest of the code block removed
+//                }
+                PlayerMetadata metadata = plugin.getMetadata(plugin.getServer().getPlayer(nick));
 		this.println(":" + metadata.getUid() + " PRIVMSG " + channel + " :" + message);
 	}
 

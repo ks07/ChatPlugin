@@ -1,5 +1,7 @@
 package de.johannes13.minecraft.bukkit.chat.plugin;
 
+import com.herocraftonline.dthielke.herochat.HeroChat;
+import com.herocraftonline.dthielke.herochat.channels.ChannelManager;
 import java.io.File;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -31,7 +33,7 @@ import de.johannes13.minecraft.bukkit.chat.inspircd.Ircd;
 public class ChatPlugin extends JavaPlugin implements Listener {
 
 	private Hashtable<Player, PlayerMetadata> umeta;
-	/* package private */Ircd ircd;
+	public Ircd ircd;
 	private Method gmGetPermission;
 	private Method gmHas;
 	private Plugin gm;
@@ -42,6 +44,8 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 //	public ChatPlugin(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ClassLoader loader) {
 //		super(pluginLoader, instance, desc, folder, plugin, loader);
 //	}
+
+        public ChannelManager hcm;
 
 	@Override
 	public void onDisable() {
@@ -76,6 +80,7 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 			pluginAddPlayer(p);
 		}
 		ircd.start();
+                this.enableHeroChat();
 	}
 
 	void pluginAddPlayer(Player p) {
@@ -286,6 +291,18 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 		return msg.toString();
 	}
 
+        public void enableHeroChat() {
+		Plugin p = getServer().getPluginManager().getPlugin("HeroChat");
+		if (p != null) {
+			if (!p.isEnabled())
+				getServer().getPluginManager().enablePlugin(p);
+			hcm = ((HeroChat) p).getChannelManager();
+			System.out.println("[ChatPlugin] Linked to Herochat.");
+		} else {
+			System.out.println("[ChatPlugin] Could not link to HeroChat.");
+		}
+	}
+
 	public List<? extends CommandSender> findPlayer(String nick) {
 		List<Player> plMatch = getServer().matchPlayer(nick);
 		ArrayList<IrcUser> plMatch2 = new ArrayList<IrcUser>();
@@ -393,6 +410,10 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 			pm.getPlayer().sendMessage("[" + channel.getPublicName() + "] " + srcNick + ": " + message);
 		}
 
+	}
+
+        public void sendIrcMessage(String srcNick, String channel, String message) {
+		hcm.getChannel(channel).sendMessage(srcNick, message, hcm.getChannel(channel).getMsgFormat(), true);
 	}
 
 	public void sendIrcMessage(String srcNick, PlayerMetadata playerMetadata, String message) {
