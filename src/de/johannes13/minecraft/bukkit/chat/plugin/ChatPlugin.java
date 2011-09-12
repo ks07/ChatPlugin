@@ -132,8 +132,19 @@ public class ChatPlugin extends JavaPlugin implements Listener {
                                                     this.sendIrcPart(user, chanMd);
 						} else {
                                                     Player user = (Player) res.get(0);
+                                                    PlayerMetadata userpm = umeta.get(user);
                                                     nick = user.getName();
-                                                    this.forcePart(umeta.get(user), chanMd);
+
+                                                    if (userpm.getChannels().contains(chanMd.name)) {
+                                                        userpm.setCurrentChannel(cmeta.get("c"));
+								userpm.getChannels().remove(chanMd.name);
+								for(PlayerMetadata pmm : chanMd.players) {
+									pmm.getPlayer().sendMessage(ChatColor.YELLOW + "[" + user.getDisplayName() + ChatColor.YELLOW + " was kicked from " + chanMd.getPublicName() + "]");
+								}
+								chanMd.players.remove(this.getMetadata(user));
+                                                    }
+
+                                                    this.ircd.partPlayer(user, chanMd, "Kicked by " + p.getDisplayName());
 						}
 						p.sendMessage(ChatColor.YELLOW + "Kicked " + nick + " from channel " + args[2]);
 						return true;

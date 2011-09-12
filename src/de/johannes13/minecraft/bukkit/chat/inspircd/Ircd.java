@@ -465,6 +465,14 @@ public class Ircd extends Thread {
 		}
 	}
 
+        public void partPlayer(Player player, ChannelMetadata channel, String message) {
+            this.println(":" + plugin.getMetadata(player).getUid() + " PART " + channel.getIrcRelay() + " :" + message);
+        }
+
+        public void kickPlayer(Player player, ChannelMetadata channel, String message) {
+
+        }
+
 	public void removePlayer(Player player, String string) {
 		this.println(":" + plugin.getMetadata(player).getUid() + " QUIT :Quit: " + string);
 	}
