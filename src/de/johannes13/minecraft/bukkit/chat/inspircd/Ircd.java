@@ -261,13 +261,9 @@ public class Ircd extends Thread {
 						}
 					}
 				} else if (data[2].startsWith("#")) {
-                                        if (data[2].substring(1).equalsIgnoreCase("game")) {
-                                                plugin.sendIrcMessage(uid2meta.get(data[0]).nick, "Global", data[3]);
-                                        } else {
-                                                ChannelMetadata ch = chmap.get(data[2]);
-                                                if (ch != null)
-                                                        ch.sendMessage(uid2meta.get(data[0]).nick, data[3]);
-                                        }
+                                    ChannelMetadata ch = chmap.get(data[2]);
+                                    if (ch != null)
+                                            ch.sendMessage(uid2meta.get(data[0]).nick, data[3]);
 				} else {
 					PlayerMetadata pm = uid2player.get(data[2]);
 					if (pm != null)
