@@ -1,7 +1,5 @@
 package de.johannes13.minecraft.bukkit.chat.plugin;
 
-import com.herocraftonline.dthielke.herochat.HeroChat;
-import com.herocraftonline.dthielke.herochat.channels.ChannelManager;
 import java.io.File;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -33,19 +31,13 @@ import de.johannes13.minecraft.bukkit.chat.inspircd.Ircd;
 public class ChatPlugin extends JavaPlugin implements Listener {
 
 	private Hashtable<Player, PlayerMetadata> umeta;
-	public Ircd ircd;
+	/* package private */Ircd ircd;
 	private Method gmGetPermission;
 	private Method gmHas;
 	private Plugin gm;
 	Hashtable<String, ChannelMetadata> cmeta;
 	public ChatPlugin() {
 	}
-
-//	public ChatPlugin(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ClassLoader loader) {
-//		super(pluginLoader, instance, desc, folder, plugin, loader);
-//	}
-
-        public ChannelManager hcm;
 
 	@Override
 	public void onDisable() {
@@ -80,7 +72,6 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 			pluginAddPlayer(p);
 		}
 		ircd.start();
-                this.enableHeroChat();
 	}
 
 	void pluginAddPlayer(Player p) {
@@ -100,38 +91,7 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 	}
 
 	public boolean check(Player p, String perm) {
-//		if (gm == null)
-//			gm = getServer().getPluginManager().getPlugin("GroupManager");
-//		if (gm == null)
-//			// gm is still not loaded, assume it works
-//			return true;
-//		if (gmGetPermission == null) {
-//			try {
-//				Class<?> clazz = gm.getClass();
-//				gmGetPermission = clazz.getMethod("getPermissionHandler");
-//			} catch (Exception e) {
-//				getServer().getLogger().log(Level.WARNING, "Tried to access GroupManager, got exception", e);
-//				// allow it - not a big security risk imho
-//				return true;
-//			}
-//		}
-//		if (gmHas == null) {
-//			try {
-//				Class<?> cl2 = gm.getClass().getClassLoader().loadClass("com.nijiko.permissions.PermissionHandler");
-//				gmHas = cl2.getMethod("has", Player.class, String.class);
-//			} catch (Exception e) {
-//				getServer().getLogger().log(Level.WARNING, "Tried to access GroupManager, got exception", e);
-//				return true;
-//			}
-//
-//		}
-//		try {
-//			return (Boolean) gmHas.invoke(gmGetPermission.invoke(gm), p, perm);
-//		} catch (Exception e) {
-//			getServer().getLogger().log(Level.WARNING, "Tried to invoke GroupManager, got exception", e);
-//			return true;
-//		}
-            // Disable permissions checks for now...
+            // Disable permissions checks for now... Deprecate and use bukkit player perms.
             return true;
 	}
 
@@ -291,18 +251,6 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 		return msg.toString();
 	}
 
-        public void enableHeroChat() {
-		Plugin p = getServer().getPluginManager().getPlugin("HeroChat");
-		if (p != null) {
-			if (!p.isEnabled())
-				getServer().getPluginManager().enablePlugin(p);
-			hcm = ((HeroChat) p).getChannelManager();
-			System.out.println("[ChatPlugin] Linked to Herochat.");
-		} else {
-			System.out.println("[ChatPlugin] Could not link to HeroChat.");
-		}
-	}
-
 	public List<? extends CommandSender> findPlayer(String nick) {
 		List<Player> plMatch = getServer().matchPlayer(nick);
 		ArrayList<IrcUser> plMatch2 = new ArrayList<IrcUser>();
@@ -410,10 +358,6 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 			pm.getPlayer().sendMessage("[" + channel.getPublicName() + "] " + srcNick + ": " + message);
 		}
 
-	}
-
-        public void sendIrcMessage(String srcNick, String channel, String message) {
-		hcm.getChannel(channel).sendMessage(srcNick, message, hcm.getChannel(channel).getMsgFormat(), true);
 	}
 
 	public void sendIrcMessage(String srcNick, PlayerMetadata playerMetadata, String message) {
