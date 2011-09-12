@@ -107,15 +107,44 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 				case CH:
 					if (args.length < 1)
 						return false;
-					if (args[0].equals("help")) {
+					if (args[0].equalsIgnoreCase("help")) {
 						p.sendMessage(ChatColor.RED + "/ch <channel> - join channel");
 						p.sendMessage(ChatColor.RED + "/ch help - display this help message");
 						p.sendMessage(ChatColor.RED + "/ch pm <player> - go to private chat with that player");
 						return true;
 					}
-					if (args[0].equals("pm")) {
+					if (args[0].equalsIgnoreCase("kick")) {
+						if (args.length != 3)
+							return false;
+						List<? extends CommandSender> res = findPlayer(args[1]);
+						if (res.size() > 1) {
+							p.sendMessage(ChatColor.RED + "User matched against:" + res);
+							return true;
+						} else if (res.size() < 1) {
+							p.sendMessage(ChatColor.RED + "User not found.");
+							return true;
+						}
+                                                ChannelMetadata chanMd = cmeta.get(args[2]);
+                                                if (chanMd == null) {
+                                                    p.sendMessage(ChatColor.RED + "Channel not found.");
+                                                    return true;
+                                                }
+						String nick;
+						if (res.get(0) instanceof IrcUser) {
+                                                    IrcUser user = (IrcUser) res.get(0);
+                                                    nick = user.getNick();
+                                                    this.sendIrcPart(user, chanMd);
+						} else {
+                                                    Player user = (Player) res.get(0);
+                                                    nick = user.getName();
+                                                    this.forcePart(umeta.get(user), chanMd);
+						}
+						p.sendMessage(ChatColor.YELLOW + "Kicked " + nick + " from channel " + args[2]);
+						return true;
+					}
+					if (args[0].equalsIgnoreCase("pm")) {
 						if (args.length != 2)
-							return false; // TODO: maybe we should return a the help ourself
+							return false; // TODO: maybe we should return the help ourselves.
 						List<? extends CommandSender> res = findPlayer(args[1]);
 						if (res.size() > 1) {
 							p.sendMessage(ChatColor.RED + "User matched against:" + res);
