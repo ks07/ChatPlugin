@@ -19,6 +19,7 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.config.ConfigurationNode;
+import org.bukkit.permissions.Permission;
 
 import de.johannes13.minecraft.bukkit.chat.inspircd.IrcUser;
 import de.johannes13.minecraft.bukkit.chat.inspircd.Ircd;
@@ -27,9 +28,6 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 
 	private Hashtable<Player, PlayerMetadata> umeta;
 	/* package private */Ircd ircd;
-	private Method gmGetPermission;
-	private Method gmHas;
-	private Plugin gm;
 	Hashtable<String, ChannelMetadata> cmeta;
 	public ChatPlugin() {
 	}
@@ -61,6 +59,9 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 		List<ConfigurationNode> chs = getConfiguration().getNodeList("channels", empty);
 		for (ConfigurationNode conf : chs) {
 			cmeta.put(conf.getString("name"), new ChannelMetadata(this, conf.getString("name"), conf.getString("irc"), conf.getString("public-name"), conf.getBoolean("hidden", false), conf.getInt("priority", 0)));
+                        // Register our permissions for the channel
+                        this.getServer().getPluginManager().addPermission(new Permission("chatplugin.join." + conf.getString("name")));
+                        this.getServer().getPluginManager().addPermission(new Permission("chatplugin.autojoin." + conf.getString("name")));
 		}
 		ircd = new Ircd(getConfiguration().getNode("ircd"), this);
 		for (Player p : getServer().getOnlinePlayers()) {
