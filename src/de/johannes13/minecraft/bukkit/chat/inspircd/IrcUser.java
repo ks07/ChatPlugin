@@ -19,6 +19,21 @@ public class IrcUser implements CommandSender {
 
 	String uid, nick;
 	final Ircd ircd;
+	private Boolean afk = false;
+
+        /**
+	 * @return afk status
+	 */
+	public Boolean isAway() {
+		return afk;
+	}
+
+	/**
+	 * @param afk the afk status of the player
+	 */
+	public void setAway(Boolean away) {
+		this.afk = away;
+	}
 
 	/**
 	 * @return the uid

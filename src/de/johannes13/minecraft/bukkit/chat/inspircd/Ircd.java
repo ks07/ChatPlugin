@@ -264,8 +264,14 @@ public class Ircd extends Thread {
 					}
 				} else if (data[2].startsWith("#")) {
                                     ChannelMetadata ch = chmap.get(data[2]);
-                                    if (ch != null)
-                                            ch.sendMessage(uid2meta.get(data[0]).nick, data[3]);
+                                    IrcUser sender = uid2meta.get(data[0]);
+                                    if (ch != null) {
+                                        if (sender.isAway()) {
+                                            ch.sendMessage("[AFK] " + sender.nick, data[3]);
+                                        } else {
+                                            ch.sendMessage(sender.nick, data[3]);
+                                        }
+                                    }
 				} else {
 					PlayerMetadata pm = uid2player.get(data[2]);
 					if (pm != null)
@@ -319,7 +325,7 @@ public class Ircd extends Thread {
 				if (p.isOp())
 					this.println(":" + uid + " OPERTYPE Ops\r\n");
 				// log the user in to services (might not work, but might work)
-				this.println(":" + uid + " METADATA accountname " + p.getName() + "\r\n");
+				//this.println(":" + uid + " METADATA accountname " + p.getName() + "\r\n");
 				this.println(":" + uid + " METADATA swhois :is playing Minecraft\r\n");
 				for (String s : meta.getChannels()) {
 					cm = plugin.getChannel(s);

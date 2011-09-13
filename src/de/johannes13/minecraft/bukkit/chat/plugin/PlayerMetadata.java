@@ -14,7 +14,22 @@ public class PlayerMetadata {
 	private ChannelMetadata currentChannel = null;
 	private String uid;
 	private String signon;
-	
+	private Boolean afk = false;
+
+        /**
+	 * @return afk status
+	 */
+	public Boolean isAway() {
+		return afk;
+	}
+
+	/**
+	 * @param afk the afk status of the player
+	 */
+	public void setAway(Boolean away) {
+		this.afk = away;
+	}
+
 	/**
 	 * @return the uid
 	 */
