@@ -455,7 +455,7 @@ public class Ircd extends Thread {
 		if (p.isOp())
 			this.println(":" + uid + " OPERTYPE Ops");
 		// log the user in to services (might not work, but might work)
-		this.println(":" + sid + " METADATA " + uid + " accountname " + p.getName());
+		//this.println(":" + sid + " METADATA " + uid + " accountname " + p.getName());
 		this.println(":" + sid + " METADATA " + uid + " swhois :is playing Minecraft");
 		for (String s : meta.getChannels()) {
 			ChannelMetadata cm = plugin.getChannel(s);

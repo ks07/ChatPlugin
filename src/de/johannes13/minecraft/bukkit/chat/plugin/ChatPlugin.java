@@ -58,8 +58,8 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 		for (ConfigurationNode conf : chs) {
 			cmeta.put(conf.getString("name"), new ChannelMetadata(this, conf.getString("name"), conf.getString("irc"), conf.getString("public-name"), conf.getBoolean("hidden", false), conf.getInt("priority", 0)));
                         // Register our permissions for the channel
-                        this.getServer().getPluginManager().addPermission(new Permission("chatplugin.join." + conf.getString("name")));
-                        this.getServer().getPluginManager().addPermission(new Permission("chatplugin.autojoin." + conf.getString("name")));
+                        pm.addPermission(new Permission("chatplugin.join." + conf.getString("name")));
+                        pm.addPermission(new Permission("chatplugin.autojoin." + conf.getString("name")));
 		}
 		ircd = new Ircd(getConfiguration().getNode("ircd"), this);
 		for (Player p : getServer().getOnlinePlayers()) {
@@ -72,7 +72,7 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 		PlayerMetadata meta = new PlayerMetadata(p);
 		int priority = -1;
 		for (ChannelMetadata ch : cmeta.values()) {
-			if (p.hasPermission("chatplugin.autojoin." + ch.name) && p.hasPermission("chatplugin.join." + ch.name)) {
+			if ((p.hasPermission("chatplugin.join." + ch.getName()) && p.hasPermission("chatplugin.join." + ch.getName())) || p.hasPermission("chatplugin.mod")) {
 				ch.players.add(meta);
 				meta.getChannels().add(ch.name);
 				if (ch.priority > priority) {
@@ -104,8 +104,9 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 						return true;
 					}
 					if (args[0].equalsIgnoreCase("kick")) {
-						if (args.length != 3)
-							return false;
+                                            if (args.length != 3)
+                                                    return false;
+                                            if (p.hasPermission("chatplugin.kick")) {
 						List<? extends CommandSender> res = findPlayer(args[1]);
 						if (res.size() > 1) {
 							p.sendMessage(ChatColor.RED + "User matched against:" + res);
@@ -142,6 +143,10 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 						}
 						p.sendMessage(ChatColor.YELLOW + "Kicked " + nick + " from channel " + args[2]);
 						return true;
+                                            } else {
+                                                p.sendMessage("You don't have permission to kick!");
+						return true;
+                                            }
 					}
 					if (args[0].equalsIgnoreCase("pm")) {
 						if (args.length != 2)
