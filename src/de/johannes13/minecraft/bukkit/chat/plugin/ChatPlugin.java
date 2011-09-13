@@ -129,7 +129,8 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 						if (res.get(0) instanceof IrcUser) {
                                                     IrcUser user = (IrcUser) res.get(0);
                                                     nick = user.getNick();
-                                                    this.sendIrcPart(user, chanMd);
+                                                    ircd.partIrcUser(user, chanMd);
+                                                    //this.sendIrcPart(user, chanMd);
 						} else {
                                                     Player user = (Player) res.get(0);
                                                     PlayerMetadata userpm = umeta.get(user);

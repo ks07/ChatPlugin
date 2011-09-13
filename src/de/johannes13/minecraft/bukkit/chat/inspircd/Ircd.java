@@ -465,12 +465,16 @@ public class Ircd extends Thread {
 		}
 	}
 
+        public void partIrcUser(IrcUser user, ChannelMetadata channel) {
+            this.println(":" + sid + " SVSPART " + user.getUid() + " " + channel.getIrcRelay());
+        }
+
         public void partPlayer(Player player, ChannelMetadata channel, String message) {
             this.println(":" + plugin.getMetadata(player).getUid() + " PART " + channel.getIrcRelay() + " :" + message);
         }
 
         public void kickPlayer(Player player, ChannelMetadata channel, String message) {
-
+            // TODO: Add kick.
         }
 
 	public void removePlayer(Player player, String string) {
