@@ -93,7 +93,16 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 			try {
 				ChatCommands c = ChatCommands.valueOf(commandLabel.toUpperCase());
 				switch (c) {
-				case CH:
+                                    case AWAY:
+                                        if (pm.isAway()) {
+                                            pm.setAway(false);
+                                            getServer().broadcastMessage(ChatColor.YELLOW + "[" + p.getName() + " is no longer away.]");
+                                        } else {
+                                            pm.setAway(true);
+                                            getServer().broadcastMessage(ChatColor.YELLOW + "[" + p.getName() + " is now away.]");
+                                        }
+                                        return true;
+                                    case CH:
 					if (args.length < 1)
 						return false;
 					if (args[0].equalsIgnoreCase("help")) {
