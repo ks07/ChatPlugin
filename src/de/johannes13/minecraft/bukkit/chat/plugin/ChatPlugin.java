@@ -73,7 +73,7 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 		PlayerMetadata meta = new PlayerMetadata(p);
 		int priority = -1;
 		for (ChannelMetadata ch : cmeta.values()) {
-			if (check(p, "chatplugin.autojoin." + ch.name) && check(p, "chatplugin.join." + ch.name)) {
+			if (p.hasPermission("chatplugin.autojoin." + ch.name) && p.hasPermission("chatplugin.join." + ch.name)) {
 				ch.players.add(meta);
 				meta.getChannels().add(ch.name);
 				if (ch.priority > priority) {
@@ -83,11 +83,6 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 			}
 		}
 		umeta.put(p, meta);
-	}
-
-	public boolean check(Player p, String perm) {
-            // Disable permissions checks for now... Deprecate and use bukkit player perms.
-            return true;
 	}
 
 	@Override
@@ -130,7 +125,6 @@ public class ChatPlugin extends JavaPlugin implements Listener {
                                                     IrcUser user = (IrcUser) res.get(0);
                                                     nick = user.getNick();
                                                     ircd.partIrcUser(user, chanMd);
-                                                    //this.sendIrcPart(user, chanMd);
 						} else {
                                                     Player user = (Player) res.get(0);
                                                     PlayerMetadata userpm = umeta.get(user);
@@ -173,7 +167,7 @@ public class ChatPlugin extends JavaPlugin implements Listener {
 					}
 					if (cmeta.containsKey(args[0])) {
 						cm = cmeta.get(args[0]);
-						if (check(p, "chatplugin.join." + cm.name)) {
+						if (p.hasPermission("chatplugin.join." + cm.name)) {
 							pm.setCurrentChannel(cm);
 							if (!pm.getChannels().contains(cm.name)) {
 								pm.getChannels().add(cm.name);
