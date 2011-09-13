@@ -121,7 +121,7 @@ public class Ircd extends Thread {
 						this.println(":" + uid + " OPERTYPE Ops\r\n");
 					// log the user in to services (might not work, but might
 					// work)
-					this.println(":" + sid + " METADATA " + uid + " accountname " + p.getName());
+					//this.println(":" + sid + " METADATA " + uid + " accountname " + p.getName());
 					this.println(":" + sid + " METADATA " + uid + " swhois :is playing Minecraft");
 				}
 				for (ChannelMetadata ch : plugin.getChannels()) {
@@ -180,17 +180,19 @@ public class Ircd extends Thread {
 					joinchannels();
 				break;
 			case FJOIN:
-				ChannelMetadata cm = chmap.get(data[2]);
-				if (cm == null)
-					break;
-				cm.setTs(data[3]);
+                            ChannelMetadata cm = chmap.get(data[2]);
+                            if (cm == null)
+                                    break;
+                            cm.setTs(data[3]);
+                            if (data[5] != null) {
 				String[] usr = data[5].split(" ");
 				for (String uid : usr) {
 					uid = uid.split(",", 2)[1];
 					IrcUser u = uid2meta.get(uid);
 					plugin.ircJoin(u, cm, state == State.CONNECTED);
 				}
-				break;
+                            }
+                            break;
 			case IDLE:
 				// Always respond with 0 0? would be a good idea :)
 				// maybe change it later to the real signon time... TODO
