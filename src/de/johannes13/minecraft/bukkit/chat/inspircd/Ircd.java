@@ -504,6 +504,17 @@ public class Ircd extends Thread {
 		return true;
 	}
 
+        public void sendAway(PlayerMetadata src, String message) {
+            // FIXME
+            this.println(":" + src.getUid() + " AWAY :I'm busy lemme rest. ");
+            //this.println(":" + sid + " MODE " + src.getUid() + " +a");
+        }
+
+        public void sendBack(PlayerMetadata src) {
+            // TODO: Check this works!
+            this.println(":" + src.getUid() + " AWAY");
+        }
+
 	public void sendAction(PlayerMetadata src, String channel, String message) {
 		this.println(":" + src.getUid() + " PRIVMSG " + channel + " :\u0001ACTION " + message + "\u0001");
 	}

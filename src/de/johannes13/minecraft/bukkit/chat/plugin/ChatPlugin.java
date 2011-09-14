@@ -96,9 +96,11 @@ public class ChatPlugin extends JavaPlugin implements Listener {
                                     case AWAY:
                                         if (pm.isAway()) {
                                             pm.setAway(false);
+                                            this.ircd.sendBack(pm);
                                             getServer().broadcastMessage(ChatColor.YELLOW + "[" + p.getName() + " is no longer away.]");
                                         } else {
                                             pm.setAway(true);
+                                            this.ircd.sendAway(pm, "I am away.");
                                             getServer().broadcastMessage(ChatColor.YELLOW + "[" + p.getName() + " is now away.]");
                                         }
                                         return true;
